@@ -10,8 +10,8 @@ import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 
 # ---------- NETWORK SETTINGS ----------
-SERVER_IP = input("Enter Scorpio IP: ")   # Replace with Pi 5 IP
-PORT = 5000
+# SERVER_IP = input("Enter Scorpio IP: ")   # Replace with Pi 5 IP
+# PORT = 5000
 
 # ---------- CONNECT TO PI 5 ----------
 # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -37,6 +37,7 @@ print("ADC initialized")
 px = py = pz = 0.0
 vx = vy = vz = 0.0
 
+global last_time
 last_time = time.time()
 
 # Tunable parameters
