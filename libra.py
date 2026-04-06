@@ -36,7 +36,6 @@ print("ADC initialized")
 # State
 px = py = pz = 0.0
 vx = vy = vz = 0.0
-
 last_time = time.time()
 
 # Tunable parameters
@@ -44,7 +43,6 @@ ACCEL_THRESHOLD = 0.08     # noise cutoff
 STATIONARY_THRESHOLD = 0.05
 DAMPING = 0.9             # velocity decay (0.9–0.99)
 ZUPT_COUNT_REQUIRED = 5   # frames of stillness
-
 stationary_counter = 0
 
 # Quaternion rotate vector into world frame
@@ -63,7 +61,8 @@ def rotate_vector(qx, qy, qz, qw, x, y, z):
   return rx, ry, rz
 
 def compute_position():
-  global last_time
+  global px, py, pz, vx, vy, vz, last_time, stationary_counter
+
   now = time.time()
   dt = now - last_time
   last_time = now
@@ -81,12 +80,9 @@ def compute_position():
   ax, ay, az = rotate_vector(qx, qy, qz, qw, ax, ay, az)
 
   # Noise filter
-  if abs(ax) < ACCEL_THRESHOLD:
-    ax = 0
-  if abs(ay) < ACCEL_THRESHOLD:
-    ay = 0
-  if abs(az) < ACCEL_THRESHOLD:
-    az = 0
+  ax = ax if abs(ax) >= ACCEL_THRESHOLD else 0
+  ay = ay if abs(ay) >= ACCEL_THRESHOLD else 0
+  az = az if abs(az) >= ACCEL_THRESHOLD else 0
 
   # Detect stationary
   if abs(ax) < STATIONARY_THRESHOLD and \
@@ -109,7 +105,7 @@ def compute_position():
   vy *= DAMPING
   vz *= DAMPING
 
-  # Position
+  # Position update
   px += vx * dt
   py += vy * dt
   pz += vz * dt
