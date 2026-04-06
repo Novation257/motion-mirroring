@@ -10,14 +10,13 @@ import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 
 # ---------- NETWORK SETTINGS ----------
-SERVER_IP = "192.168.1.100"   # Replace with Pi 5 IP
+SERVER_IP = input("Enter Scorpio IP: ")   # Replace with Pi 5 IP
 PORT = 5000
 
 # ---------- CONNECT TO PI 5 ----------
 # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # client.connect((SERVER_IP, PORT))
-
-print("Connected to Pi 5")
+# print("Connected to Pi 5")
 
 # ---------- I2C SETUP ----------
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -30,7 +29,7 @@ print("IMU initialized")
 
 # ---------- FLEX SENSOR SETUP ----------
 ads = ADS.ADS1115(i2c)
-flex_channel = AnalogIn(ads, ADS.P0)
+flex_channel = AnalogIn(ads, 0)
 print("ADC initialized")
 
 # ------ Sensor Processing Variables ------
