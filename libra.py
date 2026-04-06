@@ -39,8 +39,8 @@ vx = vy = vz = 0.0
 last_time = time.time()
 
 # Tunable parameters
-ACCEL_THRESHOLD = 0.08     # noise cutoff
-STATIONARY_THRESHOLD = 0.05
+ACCEL_THRESHOLD = 0.01     # noise cutoff
+STATIONARY_THRESHOLD = 0.01
 DAMPING = 0.9             # velocity decay (0.9–0.99)
 ZUPT_COUNT_REQUIRED = 5   # frames of stillness
 stationary_counter = 0
@@ -147,10 +147,11 @@ while True:
   # client.send(message.encode())
 
   print("Sent:", message)
+  print("--Position--")
   print("X: ", x)
   print("Y: ", y)
   print("Z: ", z)
-
+  print("--Rotation--")
   print("P: ", w)
   print("Y: ", r)
   print("R: ", t)
