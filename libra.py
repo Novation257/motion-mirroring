@@ -37,7 +37,6 @@ print("ADC initialized")
 px = py = pz = 0.0
 vx = vy = vz = 0.0
 
-global last_time
 last_time = time.time()
 
 # Tunable parameters
@@ -64,6 +63,7 @@ def rotate_vector(qx, qy, qz, qw, x, y, z):
   return rx, ry, rz
 
 def compute_position():
+  global last_time
   now = time.time()
   dt = now - last_time
   last_time = now
