@@ -135,17 +135,25 @@ def compute_rotation():
 while True:
   # ----- READ IMU -----
   x, y, z = compute_position()
-  p, y, r = compute_rotation()
+  w, r, t = compute_rotation()
 
   # ----- READ FLEX SENSOR -----
   flex_value = flex_channel.value
 
   # ----- CREATE MESSAGE -----
-  message = f"{x:.2f},{y:.2f},{z:.2f},{p:.2f},{y:.2f},{r:.2f},{flex_value}\n"
+  message = f"{x:.2f},{y:.2f},{z:.2f},{w:.2f},{r:.2f},{t:.2f},{flex_value}\n"
 
   # ----- SEND DATA -----
   # client.send(message.encode())
 
   print("Sent:", message)
+  print("X: ", x)
+  print("Y: ", y)
+  print("Z: ", z)
+
+  print("P: ", w)
+  print("Y: ", r)
+  print("R: ", t)
+
 
   # time.sleep(0.1)
