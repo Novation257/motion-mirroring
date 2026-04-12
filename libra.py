@@ -141,8 +141,8 @@ while True:
   flex_value = flex_channel.value
 
   # ----- CREATE MESSAGE -----
-  message = f"{x:.2f},{y:.2f},{z:.2f},{w:.2f},{r:.2f},{t:.2f},{flex_value}\n"
-
+  # message = f"{x:.2f},{y:.2f},{z:.2f},{w:.2f},{r:.2f},{t:.2f},{flex_value}\n"
+  message = bno.linear_acceleration
   # ----- SEND DATA -----
   # client.send(message.encode())
 
