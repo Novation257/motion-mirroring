@@ -1,3 +1,5 @@
+# Program to be ran on the Raspberry Pi 5
+
 import socket
 
 HOST = "0.0.0.0"

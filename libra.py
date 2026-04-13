@@ -1,3 +1,5 @@
+# Program to be ran on the Raspberry Pi Zero
+
 import socket
 import time
 import board
@@ -156,13 +158,13 @@ def process_flex(value, raw = False):
   if value < (nominal - deadzone): return min((nominal-value) / (nominal-max), 1)
 
 # ---------- NETWORK SETTINGS ----------
-# SERVER_IP = input("Enter Scorpio IP: ")   # Replace with Pi 5 IP
-# PORT = 5000
+SERVER_IP = input("Enter Scorpio IP: ")   # Replace with Pi 5 IP
+PORT = 5000
 
 # ---------- CONNECT TO PI 5 ----------
-# client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# client.connect((SERVER_IP, PORT))
-# print("Connected to Pi 5")
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((SERVER_IP, PORT))
+print("Connected to Pi 5")
 
 # ---------- I2C SETUP ----------
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -192,18 +194,17 @@ while True:
   message = f"{x:.6f}\n{y:.6f}\n{z:.6f}\n\n{w:.6f}\n{r:.6f}\n{t:.6f}\n\n{flex_value}\n"
 
   # ----- SEND DATA -----
-  # client.send(message.encode())
+  client.send(message.encode())
 
-  # print("Sent:\n", message)
-  # print("--Accel--", \
-  #       "\nX: ", x,
-  #       "\nY: ", y,
-  #       "\nZ: ", z,
-  #       )
-  # # print("--Rotation--")
-  # # print("P: ", w)
-  # # print("Y: ", r)
-  # # print("R: ", t)
-
-
-  # time.sleep(0.1)
+  print("")
+  print("Sent:")
+  print("--Position--")
+  print("X: ", x)
+  print("Y: ", y)
+  print("Z: ", z)
+  print("--Rotation--")
+  print("P: ", w)
+  print("Y: ", r)
+  print("R: ", t)
+  print("--Flex--")
+  print("F: ", flex_value)
