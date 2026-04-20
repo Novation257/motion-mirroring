@@ -174,7 +174,7 @@ if networking:
 i2c = busio.I2C(board.SCL, board.SDA)
 
 # ---------- IMU SETUP ----------
-mt = MotionTracker(i2c, debug=True)
+mt = MotionTracker(i2c, debug=False)
 
 # ---------- FLEX SENSOR SETUP ----------
 ads = ADS.ADS1115(i2c)
