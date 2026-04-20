@@ -23,8 +23,8 @@ class Kalman1D:
     self.P = np.eye(2) * 1.0
 
     # Process noise
-    self.Q = np.array([[0.01, 0],
-                        [0, 0.1]])
+    self.Q = np.array([[0.05, 0],
+                        [0, 0.5]])
 
     # Measurement noise (velocity correction via ZUPT)
     self.R = np.array([[0.05]])
