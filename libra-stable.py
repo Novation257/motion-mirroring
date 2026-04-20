@@ -114,9 +114,9 @@ class MotionTracker():
     if(abs(az) > self.accel_deadzone): self.vz += az * dt
 
     # Velocity decay
-    vx *= 0.95
-    vy *= 0.95
-    vz *= 0.95
+    self.vx *= 0.95
+    self.vy *= 0.95
+    self.vz *= 0.95
 
     # Integrate velocity to get position
     if(abs(self.vx) > self.vel_deadzone): self.px += self.vx * dt
