@@ -39,10 +39,10 @@ HOME_POSITIONS = {
 # Joint limits in degrees relative to home (0 deg)
 # Based on OpenManipulator-X mechanical limits
 JOINT_LIMITS_DEG = {
-  1: (-180, 180),   # base rotation
-  2: ( -86,  86),   # shoulder
-  3: ( -86,  80),   # elbow
-  4: ( -97, 113),   # wrist
+  1: (-162.0,  162.0),  # base      (-2.827 to +2.827 rad)
+  2: (-102.6,   90.0),  # shoulder  (-1.791 to +1.571 rad)
+  3: ( -54.0,   79.2),  # elbow     (-0.942 to +1.382 rad)
+  4: (-102.6,  117.0),  # wrist     (-1.791 to +2.042 rad)
 }
  
 # Gripper tick range
@@ -55,8 +55,8 @@ GRIPPER_CLOSED = 2100
 # ─────────────────────────────────────────────────────
  
 def degrees_to_ticks(degrees):
-  """Convert degrees relative to home (+/-150) to Dynamixel ticks."""
-  return int(DXL_HOME + (degrees / 300.0) * 4095)
+  """Convert degrees offset from home to Dynamixel ticks. XM430: 360deg = 4096 ticks."""
+  return clamp(int(DXL_HOME + (degrees / 360.0) * 4096), 0, 4095)
  
  
 def clamp(value, low, high):
