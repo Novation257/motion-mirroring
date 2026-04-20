@@ -87,7 +87,7 @@ class MotionTracker():
     # Calibration
     time.sleep(2)
     print("Calibrating...")
-    self.calibrate_bias()
+    # self.calibrate_bias()
 
   def calibrate_bias(self, samples=200):
     sx = sy = sz = 0
