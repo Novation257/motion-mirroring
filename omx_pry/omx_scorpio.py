@@ -1,1 +1,213 @@
-
+import socket
+import math
+from dynamixel_sdk import PortHandler, PacketHandler
+ 
+# ─────────────────────────────────────────────────────
+#  DYNAMIXEL SETTINGS
+#  OpenManipulator-X uses XM430-W350 (Protocol 2.0)
+# ─────────────────────────────────────────────────────
+ 
+DEVICENAME = "/dev/ttyUSB0"   # change to /dev/ttyACM0 if needed
+BAUDRATE   = 1000000
+PROTOCOL   = 2.0
+ 
+# Control table addresses (XM430)
+ADDR_TORQUE_ENABLE    = 64
+ADDR_GOAL_POSITION    = 116
+ADDR_PRESENT_POSITION = 132
+ 
+TORQUE_ENABLE  = 1
+TORQUE_DISABLE = 0
+ 
+# Dynamixel IDs on the OpenManipulator-X
+JOINT_IDS  = [1, 2, 3, 4]
+GRIPPER_ID = 5
+ 
+# Dynamixel position: 0-4095 maps to 0-300 degrees
+# Centre (home) = 2048 = 150 degrees
+DXL_HOME = 2048
+ 
+# Joint home positions (ticks) — safe resting pose
+HOME_POSITIONS = {
+  1: 2048,   # Joint1 base:     0 deg
+  2: 2048,   # Joint2 shoulder: 0 deg
+  3: 2048,   # Joint3 elbow:    0 deg
+  4: 2048,   # Joint4 wrist:    0 deg
+  5: 1900,   # Gripper open
+}
+ 
+# Joint limits in degrees relative to home (0 deg)
+# Based on OpenManipulator-X mechanical limits
+JOINT_LIMITS_DEG = {
+  1: (-180, 180),   # base rotation
+  2: ( -86,  86),   # shoulder
+  3: ( -86,  80),   # elbow
+  4: ( -97, 113),   # wrist
+}
+ 
+# Gripper tick range
+GRIPPER_OPEN   = 1900
+GRIPPER_CLOSED = 2100
+ 
+ 
+# ─────────────────────────────────────────────────────
+#  DYNAMIXEL HELPERS
+# ─────────────────────────────────────────────────────
+ 
+def degrees_to_ticks(degrees):
+  """Convert degrees relative to home (+/-150) to Dynamixel ticks."""
+  return int(DXL_HOME + (degrees / 300.0) * 4095)
+ 
+ 
+def clamp(value, low, high):
+  return max(low, min(high, value))
+ 
+ 
+def set_torque(dxl_id, enable):
+  val = TORQUE_ENABLE if enable else TORQUE_DISABLE
+  result, _ = packet_handler.write1ByteTxRx(
+    port_handler, dxl_id, ADDR_TORQUE_ENABLE, val)
+  if result != 0:
+    print(f"[WARN] Torque set failed on ID {dxl_id}: "
+          f"{packet_handler.getTxRxResult(result)}")
+ 
+ 
+def set_goal_position(dxl_id, ticks):
+  result, _ = packet_handler.write4ByteTxRx(
+    port_handler, dxl_id, ADDR_GOAL_POSITION, ticks)
+  if result != 0:
+    print(f"[WARN] Goal position failed on ID {dxl_id}: "
+          f"{packet_handler.getTxRxResult(result)}")
+ 
+ 
+def move_to_home():
+  print("[ARM] Moving to home position...")
+  for dxl_id, ticks in HOME_POSITIONS.items():
+    set_goal_position(dxl_id, ticks)
+  print("[ARM] Home reached.")
+ 
+ 
+# ─────────────────────────────────────────────────────
+#  MAP GLOVE DATA TO JOINT ANGLES
+# ─────────────────────────────────────────────────────
+ 
+def glove_to_joints(pitch, yaw, roll):
+  """
+  Maps BNO085 orientation (degrees) to joint angles (degrees).
+ 
+  Joint1 (base rotation)  <- yaw   of glove
+  Joint2 (shoulder pitch) <- pitch of glove, scaled down
+  Joint3 (elbow)          <- pitch of glove, opposing shoulder
+  Joint4 (wrist pitch)    <- roll  of glove
+ 
+  All outputs clamped to each joint's physical limit.
+  """
+  j1 = clamp(yaw,           *JOINT_LIMITS_DEG[1])
+  j2 = clamp(pitch * 0.5,   *JOINT_LIMITS_DEG[2])
+  j3 = clamp(-pitch * 0.3,  *JOINT_LIMITS_DEG[3])
+  j4 = clamp(roll * 0.5,    *JOINT_LIMITS_DEG[4])
+  return j1, j2, j3, j4
+ 
+ 
+def flex_to_gripper(flex):
+  """flex 0.0 = open, flex 1.0 = closed."""
+  return int(GRIPPER_OPEN + flex * (GRIPPER_CLOSED - GRIPPER_OPEN))
+ 
+ 
+# ─────────────────────────────────────────────────────
+#  SETUP DYNAMIXEL
+# ─────────────────────────────────────────────────────
+ 
+port_handler   = PortHandler(DEVICENAME)
+packet_handler = PacketHandler(PROTOCOL)
+ 
+if not port_handler.openPort():
+  raise RuntimeError(f"Failed to open port {DEVICENAME}")
+print(f"[ARM] Opened port {DEVICENAME}")
+ 
+if not port_handler.setBaudRate(BAUDRATE):
+  raise RuntimeError(f"Failed to set baud rate {BAUDRATE}")
+print(f"[ARM] Baud rate set to {BAUDRATE}")
+ 
+# Enable torque on all joints + gripper
+for dxl_id in JOINT_IDS + [GRIPPER_ID]:
+  set_torque(dxl_id, True)
+  print(f"[ARM] Torque enabled: ID {dxl_id}")
+ 
+move_to_home()
+ 
+ 
+# ─────────────────────────────────────────────────────
+#  NETWORK — receives from omx_libra.py
+# ─────────────────────────────────────────────────────
+ 
+HOST = "0.0.0.0"
+PORT = 5000
+ 
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server.bind((HOST, PORT))
+server.listen()
+ 
+print("Waiting for connection...")
+ 
+conn, addr = server.accept()
+print("Connected to:", addr)
+ 
+buffer = b""
+ 
+try:
+  while True:
+    data = conn.recv(1024)
+ 
+    if not data:
+      break
+ 
+    buffer += data
+ 
+    # Process all complete newline-terminated messages
+    while b"\n" in buffer:
+      line, buffer = buffer.split(b"\n", 1)
+      message = line.decode().strip()
+      if not message:
+        continue
+ 
+      try:
+        x, y, z, pitch, yaw, roll, flex = message.split(",")
+        pitch = float(pitch)
+        yaw   = float(yaw)
+        roll  = float(roll)
+        flex  = float(flex)
+      except ValueError:
+        print("Bad message:", message)
+        continue
+ 
+      # Map glove orientation to joint angles
+      j1, j2, j3, j4 = glove_to_joints(pitch, yaw, roll)
+ 
+      # Convert to Dynamixel ticks
+      t1 = degrees_to_ticks(j1)
+      t2 = degrees_to_ticks(j2)
+      t3 = degrees_to_ticks(j3)
+      t4 = degrees_to_ticks(j4)
+      tg = flex_to_gripper(flex)
+ 
+      # Send to arm
+      set_goal_position(1, t1)
+      set_goal_position(2, t2)
+      set_goal_position(3, t3)
+      set_goal_position(4, t4)
+      set_goal_position(GRIPPER_ID, tg)
+ 
+      print(f"Pitch:{pitch:.1f} Yaw:{yaw:.1f} Roll:{roll:.1f} Flex:{flex:.2f}")
+      print(f"  J=[{j1:.1f},{j2:.1f},{j3:.1f},{j4:.1f}] deg  Gripper:{tg}")
+      print("----------------")
+ 
+finally:
+  # Safe shutdown
+  print("[ARM] Connection lost — returning to home and disabling torque")
+  move_to_home()
+  for dxl_id in JOINT_IDS + [GRIPPER_ID]:
+    set_torque(dxl_id, False)
+  port_handler.closePort()
+ 
