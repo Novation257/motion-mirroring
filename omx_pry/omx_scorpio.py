@@ -20,20 +20,20 @@ TORQUE_ENABLE  = 1
 TORQUE_DISABLE = 0
  
 # Dynamixel IDs on the OpenManipulator-X
-JOINT_IDS  = [1, 2, 3, 4]
-GRIPPER_ID = 5
- 
+JOINT_IDS  = [11, 12, 13, 14]
+GRIPPER_ID = 15
+
 # Dynamixel position: 0-4095 maps to 0-300 degrees
 # Centre (home) = 2048 = 150 degrees
 DXL_HOME = 2048
- 
+
 # Joint home positions (ticks) — safe resting pose
 HOME_POSITIONS = {
-  1: 2048,   # Joint1 base:     0 deg
-  2: 2048,   # Joint2 shoulder: 0 deg
-  3: 2048,   # Joint3 elbow:    0 deg
-  4: 2048,   # Joint4 wrist:    0 deg
-  5: 1900,   # Gripper open
+  11: 2048,   # Joint1 base:     0 deg
+  12: 2048,   # Joint2 shoulder: 0 deg
+  13: 2048,   # Joint3 elbow:    0 deg
+  14: 2048,   # Joint4 wrist:    0 deg
+  15: 1900,   # Gripper open
 }
  
 # Joint limits in degrees relative to home (0 deg)
@@ -211,23 +211,23 @@ try:
       tg = flex_to_gripper(flex)
 
       # Rate limit — prevent the arm snapping from drift spikes or bad IMU readings
-      t1 = rate_limit(t1, last_ticks[1])
-      t2 = rate_limit(t2, last_ticks[2])
-      t3 = rate_limit(t3, last_ticks[3])
-      t4 = rate_limit(t4, last_ticks[4])
+      t1 = rate_limit(t1, last_ticks[11])
+      t2 = rate_limit(t2, last_ticks[12])
+      t3 = rate_limit(t3, last_ticks[13])
+      t4 = rate_limit(t4, last_ticks[14])
       tg = rate_limit(tg, last_ticks[GRIPPER_ID], MAX_TICK_DELTA * 2)
 
-      last_ticks[1] = t1
-      last_ticks[2] = t2
-      last_ticks[3] = t3
-      last_ticks[4] = t4
+      last_ticks[11] = t1
+      last_ticks[12] = t2
+      last_ticks[13] = t3
+      last_ticks[14] = t4
       last_ticks[GRIPPER_ID] = tg
 
       # Send to arm
-      set_goal_position(1, t1)
-      set_goal_position(2, t2)
-      set_goal_position(3, t3)
-      set_goal_position(4, t4)
+      set_goal_position(11, t1)
+      set_goal_position(12, t2)
+      set_goal_position(13, t3)
+      set_goal_position(14, t4)
       set_goal_position(GRIPPER_ID, tg)
 
       print(f"Pitch:{pitch:.1f} Yaw:{yaw:.1f} Roll:{roll:.1f} Flex:{flex:.2f}")
