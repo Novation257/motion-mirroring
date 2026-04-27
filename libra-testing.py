@@ -232,7 +232,7 @@ class MotionTracker():
 
     # Print vars if in debug mode
     if self.debug:
-      print(f"""dt: {dt:.4f} delta_pos: {position_delta[0]:.3f}, {position_delta[1]:.3f}, {position_delta[2]:.3f} 
+      print(f"""dt: {dt:.4f} delta_pos: {position_delta[0]:.3f}, {position_delta[1]:.3f}, {position_delta[2]:.3f}
                delta_rot: {rotation_delta[0]:.3f}, {rotation_delta[1]:.3f}, {rotation_delta[2]:.3f}""")
 
     # Return position and rotation deltas
@@ -249,7 +249,7 @@ def process_flex(value, raw = False):
 
   # Deadzone - return 0% flex when sensor is close to nominal value
   if value >= (nominal - deadzone): return 0
-  
+
   # Forward flex - return percentage of flex
   if value < (nominal - deadzone): return min((nominal-value) / (nominal-max), 1)
 
