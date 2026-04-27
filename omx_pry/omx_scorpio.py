@@ -7,7 +7,7 @@ from dynamixel_sdk import PortHandler, PacketHandler
 #  OpenManipulator-X uses XM430-W350 (Protocol 2.0)
 # ─────────────────────────────────────────────────────
  
-DEVICENAME = "/dev/ttyUSB0"   # change to /dev/ttyACM0 if needed
+DEVICENAME = "/dev/ttyACM0"   # change to /dev/ttyACM0 if needed
 BAUDRATE   = 1000000
 PROTOCOL   = 2.0
  
