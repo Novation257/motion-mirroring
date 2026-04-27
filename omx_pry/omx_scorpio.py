@@ -215,20 +215,20 @@ try:
       t2 = rate_limit(t2, last_ticks[2])
       t3 = rate_limit(t3, last_ticks[3])
       t4 = rate_limit(t4, last_ticks[4])
-      tg = rate_limit(tg, last_ticks[GRIPPER_ID], MAX_TICK_DELTA * 2)
+      tg = rate_limit(tg, last_ticks[5], MAX_TICK_DELTA * 2)
 
       last_ticks[1] = t1
       last_ticks[2] = t2
       last_ticks[3] = t3
       last_ticks[4] = t4
-      last_ticks[GRIPPER_ID] = tg
+      last_ticks[5] = tg
 
       # Send to arm
       set_goal_position(1, t1)
       set_goal_position(2, t2)
       set_goal_position(3, t3)
       set_goal_position(4, t4)
-      set_goal_position(GRIPPER_ID, tg)
+      set_goal_position(5, tg)
 
       print(f"Pitch:{pitch:.1f} Yaw:{yaw:.1f} Roll:{roll:.1f} Flex:{flex:.2f}")
       print(f"  J=[{j1:.1f},{j2:.1f},{j3:.1f},{j4:.1f}] deg  Gripper:{tg}")
@@ -238,7 +238,7 @@ finally:
   # Safe shutdown
   print("[ARM] Connection lost — returning to home and disabling torque")
   move_to_home()
-  for dxl_id in JOINT_IDS + [GRIPPER_ID]:
+  for dxl_id in JOINT_IDS + [5]:
     set_torque(dxl_id, False)
   port_handler.closePort()
  
