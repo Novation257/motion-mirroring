@@ -48,6 +48,9 @@ JOINT_LIMITS_DEG = {
 # Gripper tick range
 GRIPPER_OPEN   = 1900
 GRIPPER_CLOSED = 2100
+
+# Max ticks allowed to change per control cycle (~3.3 deg per step at 10 Hz = 33 deg/s)
+MAX_TICK_DELTA = 40
  
  
 # ─────────────────────────────────────────────────────
@@ -85,6 +88,13 @@ def move_to_home():
   for dxl_id, ticks in HOME_POSITIONS.items():
     set_goal_position(dxl_id, ticks)
   print("[ARM] Home reached.")
+
+
+def rate_limit(target, last, max_delta=MAX_TICK_DELTA):
+  delta = target - last
+  if abs(delta) > max_delta:
+    return last + int(math.copysign(max_delta, delta))
+  return target
  
  
 # ─────────────────────────────────────────────────────
@@ -136,8 +146,10 @@ for dxl_id in JOINT_IDS + [GRIPPER_ID]:
   print(f"[ARM] Torque enabled: ID {dxl_id}")
  
 move_to_home()
- 
- 
+
+last_ticks = dict(HOME_POSITIONS)
+
+
 # ─────────────────────────────────────────────────────
 #  NETWORK — receives from omx_libra.py
 # ─────────────────────────────────────────────────────
@@ -182,24 +194,42 @@ try:
       except ValueError:
         print("Bad message:", message)
         continue
- 
+
+      # Reject NaN — float("nan") parses without error but corrupts joint commands
+      if any(math.isnan(v) for v in (pitch, yaw, roll, flex)):
+        print("[SAFETY] NaN in message — skipping")
+        continue
+
       # Map glove orientation to joint angles
       j1, j2, j3, j4 = glove_to_joints(pitch, yaw, roll)
- 
+
       # Convert to Dynamixel ticks
       t1 = degrees_to_ticks(j1)
       t2 = degrees_to_ticks(j2)
       t3 = degrees_to_ticks(j3)
       t4 = degrees_to_ticks(j4)
       tg = flex_to_gripper(flex)
- 
+
+      # Rate limit — prevent the arm snapping from drift spikes or bad IMU readings
+      t1 = rate_limit(t1, last_ticks[1])
+      t2 = rate_limit(t2, last_ticks[2])
+      t3 = rate_limit(t3, last_ticks[3])
+      t4 = rate_limit(t4, last_ticks[4])
+      tg = rate_limit(tg, last_ticks[GRIPPER_ID], MAX_TICK_DELTA * 2)
+
+      last_ticks[1] = t1
+      last_ticks[2] = t2
+      last_ticks[3] = t3
+      last_ticks[4] = t4
+      last_ticks[GRIPPER_ID] = tg
+
       # Send to arm
       set_goal_position(1, t1)
       set_goal_position(2, t2)
       set_goal_position(3, t3)
       set_goal_position(4, t4)
       set_goal_position(GRIPPER_ID, tg)
- 
+
       print(f"Pitch:{pitch:.1f} Yaw:{yaw:.1f} Roll:{roll:.1f} Flex:{flex:.2f}")
       print(f"  J=[{j1:.1f},{j2:.1f},{j3:.1f},{j4:.1f}] deg  Gripper:{tg}")
       print("----------------")

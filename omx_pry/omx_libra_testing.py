@@ -1,4 +1,14 @@
-import socket
+"""
+omx_libra_testing.py
+--------------------
+Standalone test for the glove hardware. Runs all of omx_libra.py's sensor
+logic (IMU, Kalman filter, flex, dead man's trigger) and prints live values
+and drift ranges locally — no network, no arm required.
+
+Run on the Pi:
+    python omx_libra_testing.py
+"""
+
 import time
 import board
 import busio
@@ -45,18 +55,15 @@ class Kalman1D:
 
 
 def _wrap_delta(delta):
-  """Normalize an angle delta to [-180, 180] to handle IMU ±180° boundary crossings."""
   return ((delta + 180) % 360) - 180
 
 
 class MotionTracker():
   def __init__(self, i2c, debug=False):
     self.debug = debug
-
     self.kx = Kalman1D()
     self.ky = Kalman1D()
     self.kz = Kalman1D()
-
     self.ax_f = self.ay_f = self.az_f = 0
     self.bias_ax = self.bias_ay = self.bias_az = 0
     self.tick = time.perf_counter()
@@ -139,10 +146,6 @@ class MotionTracker():
     self.last_position = (px, py, pz)
     self.last_rotation = (w, r, t)
 
-    if self.debug:
-      print(f"\rdt:{dt:.4f}  dpos:({position_delta[0]:.3f},{position_delta[1]:.3f},{position_delta[2]:.3f})"
-            f"  drot:({rotation_delta[0]:.3f},{rotation_delta[1]:.3f},{rotation_delta[2]:.3f})", end='')
-
     return position_delta + rotation_delta
 
 
@@ -155,17 +158,6 @@ def process_flex(value, raw=False):
   if value  < (nominal - deadzone): return min((nominal - value) / (nominal - max), 1)
   return 0
 
-
-# ---------- NETWORK SETTINGS ----------
-networking = False
-# networking = bool(input("Connect to Scorpio? (y/n) ") == 'y')
-
-if networking:
-  SERVER_IP = input("Enter Scorpio IP: ")
-  PORT = 5000
-  client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  client.connect((SERVER_IP, PORT))
-  print("Connected to Scorpio")
 
 # --------- GPIO (DEAD MAN'S TRIGGER) ---------
 BUTTON_PIN = 17
@@ -181,36 +173,55 @@ mt = MotionTracker(i2c, debug=False)
 # ---------- FLEX SENSOR SETUP ----------
 ads = ADS.ADS1115(i2c)
 flex_channel = AnalogIn(ads, 0)
-print("ADC initialized")
+print("ADC initialized\n")
 
-# ------ Accumulated pose (position + rotation) ------
+# ---------- STATE ----------
 point_rotation = np.zeros(6)
 
-while True:
-  # ----- READ IMU -----
-  deltas = mt.update()
+fields = ["x", "y", "z", "pitch", "yaw", "roll"]
+mins = {f:  float("inf") for f in fields}
+maxs = {f: -float("inf") for f in fields}
+count = 0
+start = time.time()
 
-  # ----- READ FLEX SENSOR -----
-  flex_value = process_flex(flex_channel.value, raw=False)
+print("Running — hold button to accumulate position. Ctrl+C to stop.\n")
 
-  # ----- READ DEAD MAN'S TRIGGER -----
-  button_pressed = (GPIO.input(BUTTON_PIN) == GPIO.LOW)
+try:
+  while True:
+    deltas = mt.update()
+    flex_value = process_flex(flex_channel.value, raw=False)
+    button_pressed = (GPIO.input(BUTTON_PIN) == GPIO.LOW)
 
-  # Only accumulate movement while button is held
-  if button_pressed:
-    point_rotation = np.add(point_rotation, deltas)
+    if button_pressed:
+      point_rotation = np.add(point_rotation, deltas)
 
-  x, y, z, w, r, t = point_rotation
+    x, y, z, w, r, t = point_rotation
+    count += 1
+    elapsed = time.time() - start
 
-  # ----- CREATE MESSAGE -----
-  # "x,y,z,pitch,yaw,roll,flex\n" — matches omx_scorpio.py and omx_pry_testing.py
-  message = f"{x:.6f},{y:.6f},{z:.6f},{w:.6f},{r:.6f},{t:.6f},{flex_value}\n"
+    vals = {"x": x, "y": y, "z": z, "pitch": w, "yaw": r, "roll": t}
+    for f, v in vals.items():
+      if v < mins[f]: mins[f] = v
+      if v > maxs[f]: maxs[f] = v
 
-  # ----- SEND DATA -----
-  if networking:
-    client.send(message.encode())
+    print(
+      f"[{elapsed:6.1f}s | #{count:5d}]  DMT: {'HELD' if button_pressed else 'off '}\n"
+      f"  Position   X:{x:8.4f}  Y:{y:8.4f}  Z:{z:8.4f}  (m)\n"
+      f"  Rotation   P:{w:7.2f}  Yw:{r:7.2f}  R:{t:7.2f}  (deg)\n"
+      f"  Flex       {flex_value:.3f}\n"
+      f"  Drift range:\n"
+      f"    X  [{mins['x']:8.4f} .. {maxs['x']:8.4f}]\n"
+      f"    Y  [{mins['y']:8.4f} .. {maxs['y']:8.4f}]\n"
+      f"    Z  [{mins['z']:8.4f} .. {maxs['z']:8.4f}]\n"
+      f"    P  [{mins['pitch']:7.2f} .. {maxs['pitch']:7.2f}]\n"
+      f"    Yw [{mins['yaw']:7.2f} .. {maxs['yaw']:7.2f}]\n"
+      f"    R  [{mins['roll']:7.2f} .. {maxs['roll']:7.2f}]\n"
+      f"{'─' * 55}"
+    )
 
-  print(f"\rX:{x:.3f} Y:{y:.3f} Z:{z:.3f}  P:{w:.1f} Yw:{r:.1f} R:{t:.1f}  Flex:{flex_value:.2f}  DMT:{'ON' if button_pressed else 'off'}",
-        end='', flush=True)
+    time.sleep(0.1)
 
-  time.sleep(0.1)
+except KeyboardInterrupt:
+  print("\nStopped.")
+finally:
+  GPIO.cleanup()
