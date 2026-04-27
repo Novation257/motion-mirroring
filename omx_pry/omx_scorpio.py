@@ -111,6 +111,7 @@ def glove_to_joints(pitch, yaw, roll):
  
 def flex_to_gripper(flex):
   """flex 0.0 = open, flex 1.0 = closed."""
+  flex = clamp(flex, 0.0, 1.0)
   return int(GRIPPER_OPEN + flex * (GRIPPER_CLOSED - GRIPPER_OPEN))
  
  
