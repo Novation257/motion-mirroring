@@ -6,6 +6,8 @@ import board
 import busio
 import math
 import numpy as np
+import RPi.GPIO as GPIO
+import sys
 
 from adafruit_bno08x.i2c import BNO08X_I2C
 from adafruit_bno08x import BNO_REPORT_ROTATION_VECTOR, \
@@ -19,46 +21,72 @@ class Kalman1D:
     # State: [position, velocity]
     self.x = np.array([[0.0], [0.0]])
 
-    # Covariance
+    # Covariance matrix
     self.P = np.eye(2) * 1.0
 
-    # Process noise
+    # Process noise (dynamically adjusted per dt)
     self.Q = np.array([[0.05, 0],
                         [0, 0.5]])
 
     # Measurement noise (velocity correction via ZUPT)
-    self.R = np.array([[0.05]])
+    self.R = np.array([[0.01]])  # Start with small trust in velocity measurements
 
     # Measurement matrix (we observe velocity during ZUPT)
     self.H = np.array([[0, 1]])
 
+    # Low-pass filter coefficient (for raw accel smoothing)
+    self.alpha = 0.2
+    self.velocity = 0  # Smoothing of velocity
+
   def predict(self, a, dt):
-    # State transition
+    # Dynamically adjusting process noise based on time step (dt)
+    q = 0.1  # Process noise coefficient (you can tune this)
+    self.Q = np.array([
+        [0.25 * dt**4, 0.5 * dt**3],
+        [0.5 * dt**3, dt**2]
+    ]) * q
+
+    # State transition matrix (position, velocity)
     F = np.array([[1, dt],
                   [0, 1]])
 
-    # Control input (acceleration)
-    B = np.array([[0.5 * dt * dt],
+    # Control matrix (acceleration)
+    B = np.array([[0.5 * dt**2],
                   [dt]])
 
-    # Predict state
+    # Prediction step: Predict state
     self.x = F @ self.x + B * a
 
     # Predict covariance
     self.P = F @ self.P @ F.T + self.Q
 
   def update_velocity(self, measured_v=0):
+    # Measurement update: Update velocity (via ZUPT)
     z = np.array([[measured_v]])
 
-    y = z - (self.H @ self.x)
-    S = self.H @ self.P @ self.H.T + self.R
-    K = self.P @ self.H.T @ np.linalg.inv(S)
+    y = z - (self.H @ self.x)  # Innovation or residual
+    S = self.H @ self.P @ self.H.T + self.R  # Innovation covariance
+    K = self.P @ self.H.T @ np.linalg.inv(S)  # Kalman gain
 
+    # Update state estimate
     self.x = self.x + K @ y
     self.P = (np.eye(2) - K @ self.H) @ self.P
 
   def get_state(self):
+    # Return the current position and velocity
     return self.x[0, 0], self.x[1, 0]
+
+  def apply_velocity_smoothing(self, vx):
+    # Simple velocity smoothing (exponential filter)
+    self.velocity = 0.9 * self.velocity + 0.1 * vx
+    return self.velocity
+
+  def zero_velocity_update(self, ax, ay, az, threshold=0.1):
+    # Zero-velocity detection using the magnitude of the acceleration
+    acc_mag = np.sqrt(ax**2 + ay**2 + az**2)
+    if acc_mag < threshold:
+        return True  # ZUPT: we assume zero velocity here
+    return False
 
 # MotionTracker class for IMU position and rotation tracking
 class MotionTracker():
@@ -78,6 +106,10 @@ class MotionTracker():
 
     # Timing
     self.tick = time.perf_counter()
+
+    # Last position and rotation
+    self.last_position = (0, 0, 0)
+    self.last_rotation = (0, 0, 0)
 
     # Sensor setup
     self.bno = BNO08X_I2C(i2c_bus=i2c)
@@ -190,13 +222,21 @@ class MotionTracker():
     py, vy = self.ky.get_state()
     pz, vz = self.kz.get_state()
 
+    # Calculate deltas for position and rotation
+    position_delta = (px - self.last_position[0], py - self.last_position[1], pz - self.last_position[2])
+    rotation_delta = (w - self.last_rotation[0], r - self.last_rotation[1], t - self.last_rotation[2])
+
+    # Update last position and rotation
+    self.last_position = (px, py, pz)
+    self.last_rotation = (w, r, t)
+
     # Print vars if in debug mode
     if self.debug:
-      print(f"dt: {dt:.4f}")
-      print(f"pos: {px:.3f}, {py:.3f}, {pz:.3f}")
-      print(f"vel: {vx:.3f}, {vy:.3f}, {vz:.3f}")
+      print(f"""dt: {dt:.4f} delta_pos: {position_delta[0]:.3f}, {position_delta[1]:.3f}, {position_delta[2]:.3f} 
+               delta_rot: {rotation_delta[0]:.3f}, {rotation_delta[1]:.3f}, {rotation_delta[2]:.3f}""")
 
-    return px, py, pz, w, r, t
+    # Return position and rotation deltas
+    return position_delta + rotation_delta
 
 # Processes the raw flex sensor readings into a percent
 def process_flex(value, raw = False):
@@ -214,19 +254,29 @@ def process_flex(value, raw = False):
   if value < (nominal - deadzone): return min((nominal-value) / (nominal-max), 1)
 
 # ---------- NETWORK SETTINGS ----------
-# SERVER_IP = input("Enter Scorpio IP: ")   # Replace with Pi 5 IP
-# PORT = 5000
+networking = False
+# networking = bool(input("Connect to Scorpio? (y/n) ") == 'y')
+
+if networking:
+  SERVER_IP = input("Enter Scorpio IP: ")   # Replace with Pi 5 IP
+  PORT = 5000
 
 # ---------- CONNECT TO PI 5 ----------
-# client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# client.connect((SERVER_IP, PORT))
-# print("Connected to Pi 5")
+if networking:
+  client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  client.connect((SERVER_IP, PORT))
+  print("Connected to Pi 5")
+
+# --------- GPIO (DEAD MAN SWITCH) ---------
+BUTTON_PIN = 17
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # ---------- I2C SETUP ----------
 i2c = busio.I2C(board.SCL, board.SDA)
 
 # ---------- IMU SETUP ----------
-mt = MotionTracker(i2c, debug=True)
+mt = MotionTracker(i2c, debug=False)
 
 # ---------- FLEX SENSOR SETUP ----------
 ads = ADS.ADS1115(i2c)
@@ -235,32 +285,34 @@ print("ADC initialized")
 
 # ------ Sensor Processing Variables ------
 # State
-px = py = pz = 0.0
-vx = vy = vz = 0.0
+point_rotation = (0, 0, 0, 0, 0, 0)
+last_DMT_state = False
 last_time = time.time()
 
 while True:
   # ----- READ IMU -----
-  x, y, z, w, r, t = mt.update()
+  deltas = mt.update()
 
   # ----- READ FLEX SENSOR -----
   flex_value = process_flex(flex_channel.value, raw = False)
 
+  # ----- READ DEAD MAN'S TRIGGER -----
+  button_pressed = (GPIO.input(BUTTON_PIN) == GPIO.LOW)
+  # button_just_pressed = True if (button_pressed == True and last_DMT_state == False) else False
+  # button_just_released = True if (button_pressed == False and last_DMT_state == True) else False
+  # last_DMT_state = button_pressed
+
+  # Only allow movement when DMT is pressed... clamp angles to (-180, 180)
+  if button_pressed: point_rotation = np.add(point_rotation, deltas)
+  x, y, z, w, r, t = point_rotation
+  for angle in (w, r, t): ((angle + 180) % 360) - 180
+
   # ----- CREATE MESSAGE -----
-  message = f"{x:.6f}\n{y:.6f}\n{z:.6f}\n\n{w:.6f}\n{r:.6f}\n{t:.6f}\n\n{flex_value}\n"
+
+
+  message = f"{x:.2f}\n{y:.2f}\n{z:.2f}\n\n{w:.2f}\n{r:.2f}\n{t:.2f}\n\n{flex_value}\n"
+  printable = f"{x:.2f}, {y:.2f}, {z:.2f}   {w:.2f}, {r:.2f}, {t:.2f}   {flex_value}"
+  print(f"\r{printable}", end='', flush=True)
 
   # ----- SEND DATA -----
-  # client.send(message.encode())
-
-  # print("")
-  # print("Sent:")
-  # print("--Position--")
-  # print("X: ", x)
-  # print("Y: ", y)
-  # print("Z: ", z)
-  # print("--Rotation--")
-  # print("P: ", w)
-  # print("Y: ", r)
-  # print("R: ", t)
-  # print("--Flex--")
-  # print("F: ", flex_value)
+  if networking: client.send(message.encode())

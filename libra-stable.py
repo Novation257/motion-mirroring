@@ -5,6 +5,7 @@ import time
 import board
 import busio
 import math
+import RPi.GPIO as GPIO
 
 from adafruit_bno08x.i2c import BNO08X_I2C
 from adafruit_bno08x import BNO_REPORT_ROTATION_VECTOR, \
@@ -119,9 +120,9 @@ class MotionTracker():
     self.vz *= 0.95
 
     # Integrate velocity to get position
-    if(abs(self.vx) > self.vel_deadzone): self.px += self.vx * dt
-    if(abs(self.vy) > self.vel_deadzone): self.py += self.vy * dt
-    if(abs(self.vz) > self.vel_deadzone): self.pz += self.vz * dt
+    if(abs(self.vx) > self.vel_deadzone): self.px = self.vx * dt
+    if(abs(self.vy) > self.vel_deadzone): self.py = self.vy * dt
+    if(abs(self.vz) > self.vel_deadzone): self.pz = self.vz * dt
 
     # Print vars if in debug mode
     if self.debug:
@@ -175,6 +176,11 @@ if networking:
   client.connect((SERVER_IP, PORT))
   print("Connected to Pi 5")
 
+# --------- GPIO (DEAD MAN SWITCH) ---------
+BUTTON_PIN = 17
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
 # ---------- I2C SETUP ----------
 i2c = busio.I2C(board.SCL, board.SDA)
 
@@ -195,6 +201,9 @@ last_time = time.time()
 while True:
   # ----- READ IMU -----
   x, y, z, w, r, t = mt.update()
+
+  # Read 
+  button_pressed = (GPIO.input(BUTTON_PIN) == GPIO.LOW)
 
   # ----- READ FLEX SENSOR -----
   flex_value = process_flex(flex_channel.value, raw = False)
