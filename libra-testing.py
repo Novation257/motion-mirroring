@@ -254,8 +254,8 @@ def process_flex(value, raw = False):
   if value < (nominal - deadzone): return min((nominal-value) / (nominal-max), 1)
 
 # ---------- NETWORK SETTINGS ----------
-networking = False
-# networking = bool(input("Connect to Scorpio? (y/n) ") == 'y')
+# networking = False
+networking = bool(input("Connect to Scorpio? (y/n) ") == 'y')
 
 if networking:
   SERVER_IP = input("Enter Scorpio IP: ")   # Replace with Pi 5 IP
