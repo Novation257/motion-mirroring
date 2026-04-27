@@ -157,8 +157,8 @@ def process_flex(value, raw=False):
 
 
 # ---------- NETWORK SETTINGS ----------
-networking = False
-# networking = bool(input("Connect to Scorpio? (y/n) ") == 'y')
+# networking = False
+networking = bool(input("Connect to Scorpio? (y/n) ") == 'y')
 
 if networking:
   SERVER_IP = input("Enter Scorpio IP: ")
