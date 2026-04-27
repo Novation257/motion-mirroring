@@ -8,7 +8,7 @@ from dynamixel_sdk import PortHandler, PacketHandler
 # ─────────────────────────────────────────────────────
  
 DEVICENAME = "/dev/ttyUSB0"   # change to /dev/ttyACM0 if needed
-BAUDRATE   = 1000000
+BAUDRATE   = 57600
 PROTOCOL   = 2.0
  
 # Control table addresses (XM430)
