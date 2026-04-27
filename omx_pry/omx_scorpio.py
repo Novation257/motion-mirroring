@@ -8,7 +8,7 @@ from dynamixel_sdk import PortHandler, PacketHandler
 # ─────────────────────────────────────────────────────
  
 DEVICENAME = "/dev/ttyUSB0"   # change to /dev/ttyACM0 if needed
-BAUDRATE   = 57600
+BAUDRATE   = 1000000
 PROTOCOL   = 2.0
  
 # Control table addresses (XM430)
@@ -20,8 +20,8 @@ TORQUE_ENABLE  = 1
 TORQUE_DISABLE = 0
  
 # Dynamixel IDs on the OpenManipulator-X
-JOINT_IDS  = [1, 2, 3, 4]
-GRIPPER_ID = 5
+JOINT_IDS  = [11, 12, 13, 14]
+GRIPPER_ID = 15
  
 # Dynamixel position: 0-4095 maps to 0-300 degrees
 # Centre (home) = 2048 = 150 degrees
