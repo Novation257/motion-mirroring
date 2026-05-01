@@ -187,6 +187,9 @@ try:
  
       try:
         x, y, z, roll, yaw, pitch, flex = message.split(",")
+        x     = float(x)
+        y     = float(y)
+        z     = float(z)
         pitch = float(pitch)
         yaw   = float(yaw)
         roll  = float(roll)
