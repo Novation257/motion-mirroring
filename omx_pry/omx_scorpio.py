@@ -6,7 +6,7 @@ from dynamixel_sdk import PortHandler, PacketHandler
 #  TWO-JOINT INVERSE KINEMATICS
 # ─────────────────────────────────────────────────────
 
-def two_joint_ik(x, y, l1=125, l2=125):
+def two_joint_ik(x, y, l1=0.125, l2=0.125):
     # Distance to target
     dist_sq = x**2 + y**2
     dist = math.sqrt(dist_sq)
@@ -22,7 +22,7 @@ def two_joint_ik(x, y, l1=125, l2=125):
     # Numerical safety clamp
     cos_theta2 = max(-1.0, min(1.0, cos_theta2))
 
-    theta2 = math.acos(cos_theta2)  # elbow-down solution
+    theta2 = -math.acos(cos_theta2)  # elbow-up solution
 
     # Compute theta1
     k1 = l1 + l2 * cos_theta2
@@ -30,7 +30,10 @@ def two_joint_ik(x, y, l1=125, l2=125):
 
     theta1 = math.atan2(y, x) - math.atan2(k2, k1)
 
-    return theta1, theta2
+    j2_output = theta1 + 90
+    j3_output = theta2 - 90
+
+    return j2_output, j3_output
 
 
 # ─────────────────────────────────────────────────────
@@ -81,7 +84,7 @@ GRIPPER_OPEN   = 3300
 GRIPPER_CLOSED = 1700
 
 # Max ticks allowed to change per control cycle (~3.3 deg per step at 10 Hz = 33 deg/s)
-MAX_TICK_DELTA = 10
+MAX_TICK_DELTA = 5
  
  
 # ─────────────────────────────────────────────────────
@@ -143,9 +146,12 @@ def glove_to_joints(x, y, z, pitch, yaw, roll):
  
   All outputs clamped to each joint's physical limit.
   """
+
+  t1, t2 = two_joint_ik((y/2)+0.125, (z/2)+0.125)
+
   j1 = clamp(yaw,           *JOINT_LIMITS_DEG[1])
-  j2 = clamp(z *  20,   *JOINT_LIMITS_DEG[2])
-  j3 = clamp(y *  20,   *JOINT_LIMITS_DEG[3])
+  j2 = clamp(t1,   *JOINT_LIMITS_DEG[2])
+  j3 = clamp(t2,   *JOINT_LIMITS_DEG[3])
   j4 = clamp(-pitch * 0.75, *JOINT_LIMITS_DEG[4])
   return j1, j2, j3, j4
  
