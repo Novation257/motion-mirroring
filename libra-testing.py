@@ -314,7 +314,8 @@ while True:
   message = f"{x:.6f},{y:.6f},{z:.6f},{w:.6f},{r:.6f},{t:.6f},{flex_value}\n"
 
   printable = f"{x:.2f}, {y:.2f}, {z:.2f}   {w:.2f}, {r:.2f}, {t:.2f}   flex={flex_value} --"
-  print(f"\r{printable}", end='', flush=True)
+  # print(f"\r{printable}", end='', flush=True)
+  print(printable)
 
   # ----- SEND DATA -----
   if networking: client.send(message.encode())
