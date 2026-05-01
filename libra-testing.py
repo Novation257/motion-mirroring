@@ -246,7 +246,7 @@ def process_flex(value, raw = False):
   nominal = 1600 # Sensor value when unflexed
   flexed = 500 # Diff between nominal and max value
 
-  return abs(value - nominal) / flexed
+  return max(0.0, min(value - nominal / flexed, 1.0))
 
 # ---------- NETWORK SETTINGS ----------
 # networking = False
