@@ -4,53 +4,46 @@ from dynamixel_sdk import PortHandler, PacketHandler
 
 # ─────────────────────────────────────────────────────
 #  TWO-JOINT INVERSE KINEMATICS
+# https://www.intel.com/content/www/us/en/developer/articles/technical/accelerating-deep-learning-based-large-scale-inverse-kinematics-with-intel-distribution-of.html
 # ─────────────────────────────────────────────────────
 
+import math
+
 def two_joint_ik(x, y, l1=0.125, l2=0.125):
-
     # Distance to target
-    dist_sq = x**2 + y**2
-    dist = math.sqrt(dist_sq)
+    r = math.sqrt(x**2 + y**2)
 
-    max_reach = l1 + l2
-    min_reach = abs(l1 - l2)
+    # Reach limits
+    max_r = l1 + l2
+    min_r = abs(l1 - l2)
 
-    # Handle zero target safely
-    if dist < 1e-8:
-        # ուղղ direction arbitrary; choose along +x
-        x_clamped = min_reach
-        y_clamped = 0.0
-        dist = min_reach
-    else:
-        # Clamp distance
-        clamped_dist = max(min_reach, min(max_reach, dist))
+    # Clamp target to nearest reachable point
+    if r > max_r:
+        scale = max_r / r
+        x *= scale
+        y *= scale
+        r = max_r
+    elif r < min_r:
+        scale = min_r / r if r != 0 else 0
+        x *= scale
+        y *= scale
+        r = min_r
 
-        # Scale target to clamped distance
-        scale = clamped_dist / dist
-        x_clamped = x * scale
-        y_clamped = y * scale
+    # Law of cosines for angle at joint 2
+    cos_t2 = (r**2 - l1**2 - l2**2) / (2 * l1 * l2)
+    cos_t2 = max(-1.0, min(1.0, cos_t2))  # numerical safety
+    t2 = math.acos(cos_t2)
 
-    # Recompute with clamped point
-    dist_sq = x_clamped**2 + y_clamped**2
+    # Angle for joint 1
+    k1 = l1 + l2 * math.cos(t2)
+    k2 = l2 * math.sin(t2)
+    t1 = math.atan2(y, x) - math.atan2(k2, k1)
 
-    # Law of cosines for theta2
-    cos_theta2 = (dist_sq - l1**2 - l2**2) / (2 * l1 * l2)
+    # Convert to degrees if needed
+    t1 = math.degrees(t1)
+    t2 = math.degrees(t2)
 
-    # Numerical safety clamp
-    cos_theta2 = max(-1.0, min(1.0, cos_theta2))
-
-    theta2 = -math.acos(cos_theta2)  # elbow-up solution
-
-    # Compute theta1
-    k1 = l1 + l2 * cos_theta2
-    k2 = l2 * math.sin(theta2)
-
-    theta1 = math.atan2(y, x) - math.atan2(k2, k1)
-
-    j2_output = theta1
-    j3_output = theta2 - 90
-
-    return j2_output, j3_output
+    return t1, t2
 
 
 # ─────────────────────────────────────────────────────
