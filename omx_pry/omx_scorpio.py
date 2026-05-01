@@ -106,16 +106,16 @@ def glove_to_joints(pitch, yaw, roll):
   Maps BNO085 orientation (degrees) to joint angles (degrees).
  
   Joint1 (base rotation)  <- yaw   of glove
-  Joint2 (shoulder pitch) <- pitch of glove, scaled down
-  Joint3 (elbow)          <- pitch of glove, opposing shoulder
-  Joint4 (wrist pitch)    <- roll  of glove
+  Joint2 (shoulder pitch) <- roll of glove, scaled down
+  Joint3 (elbow)          <- roll of glove, opposing shoulder
+  Joint4 (wrist pitch)    <- pitch  of glove
  
   All outputs clamped to each joint's physical limit.
   """
   j1 = clamp(yaw,           *JOINT_LIMITS_DEG[1])
-  j2 = clamp(pitch * 0.5,   *JOINT_LIMITS_DEG[2])
-  j3 = clamp(-pitch * 0.3,  *JOINT_LIMITS_DEG[3])
-  j4 = clamp(-roll * 0.5,    *JOINT_LIMITS_DEG[4])
+  j2 = clamp(roll *  0.5,   *JOINT_LIMITS_DEG[2])
+  j3 = clamp(-roll * 0.3,   *JOINT_LIMITS_DEG[3])
+  j4 = clamp(pitch * 0.75,  *JOINT_LIMITS_DEG[4])
   return j1, j2, j3, j4
  
  
@@ -186,7 +186,7 @@ try:
         continue
  
       try:
-        x, y, z, pitch, yaw, roll, flex = message.split(",")
+        x, y, z, roll, yaw, pitch, flex = message.split(",")
         pitch = float(pitch)
         yaw   = float(yaw)
         roll  = float(roll)
