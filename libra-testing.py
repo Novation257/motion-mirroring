@@ -290,7 +290,10 @@ while True:
   deltas = mt.update()
 
   # ----- READ FLEX SENSOR -----
-  flex_value = process_flex(flex_channel.value, raw = False)
+  try:
+    flex_value = process_flex(flex_channel.value, raw = False)
+  except:
+    flex_value = flex_out
 
   # ----- READ DEAD MAN'S TRIGGER -----
   button_pressed = (GPIO.input(BUTTON_PIN) == GPIO.LOW)
@@ -303,7 +306,12 @@ while True:
     point_rotation = np.add(point_rotation, deltas)
     flex_out = flex_value
   x, y, z, w, r, t = point_rotation
-  for angle in (w, r, t): ((angle + 180) % 360) - 180
+  for angle in (w, r, t):
+    ((angle + 180) % 360) - 180
+    while angle > 180:
+      angle -= 180
+    while angle < -180:
+      angle += 180
 
   # ----- CREATE MESSAGE -----
 
