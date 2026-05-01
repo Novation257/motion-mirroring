@@ -7,6 +7,8 @@ from dynamixel_sdk import PortHandler, PacketHandler
 # ─────────────────────────────────────────────────────
 
 def two_joint_ik(x, y, l1=0.125, l2=0.125):
+    y= -y
+    
     # Distance to target
     dist_sq = x**2 + y**2
     dist = math.sqrt(dist_sq)
