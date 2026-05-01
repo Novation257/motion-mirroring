@@ -13,10 +13,26 @@ def two_joint_ik(x, y, l1=0.125, l2=0.125):
     dist_sq = x**2 + y**2
     dist = math.sqrt(dist_sq)
 
-    # Check reachability
-    if dist > (l1 + l2) or dist < abs(l1 - l2):
-        print("Target is not reachable.")
-        return None
+    max_reach = l1 + l2
+    min_reach = abs(l1 - l2)
+
+    # Handle zero target safely
+    if dist < 1e-8:
+        # ուղղ direction arbitrary; choose along +x
+        x_clamped = min_reach
+        y_clamped = 0.0
+        dist = min_reach
+    else:
+        # Clamp distance
+        clamped_dist = max(min_reach, min(max_reach, dist))
+
+        # Scale target to clamped distance
+        scale = clamped_dist / dist
+        x_clamped = x * scale
+        y_clamped = y * scale
+
+    # Recompute with clamped point
+    dist_sq = x_clamped**2 + y_clamped**2
 
     # Law of cosines for theta2
     cos_theta2 = (dist_sq - l1**2 - l2**2) / (2 * l1 * l2)
