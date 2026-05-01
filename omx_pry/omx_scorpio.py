@@ -46,8 +46,8 @@ JOINT_LIMITS_DEG = {
 }
  
 # Gripper tick range
-GRIPPER_OPEN   = 2700
-GRIPPER_CLOSED = 1400
+GRIPPER_OPEN   = 3300
+GRIPPER_CLOSED = 1700
 
 # Max ticks allowed to change per control cycle (~3.3 deg per step at 10 Hz = 33 deg/s)
 MAX_TICK_DELTA = 40
