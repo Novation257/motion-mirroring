@@ -46,8 +46,8 @@ JOINT_LIMITS_DEG = {
 }
  
 # Gripper tick range
-GRIPPER_OPEN   = 1900
-GRIPPER_CLOSED = 2100
+GRIPPER_OPEN   = 2100
+GRIPPER_CLOSED = 1800
 
 # Max ticks allowed to change per control cycle (~3.3 deg per step at 10 Hz = 33 deg/s)
 MAX_TICK_DELTA = 40
@@ -122,7 +122,7 @@ def glove_to_joints(pitch, yaw, roll):
 def flex_to_gripper(flex):
   """flex 0.0 = open, flex 1.0 = closed."""
   flex = clamp(flex, 0.0, 1.0)
-  return int(GRIPPER_OPEN + flex * (GRIPPER_CLOSED - GRIPPER_OPEN))
+  return int(GRIPPER_OPEN - flex * abs(GRIPPER_CLOSED - GRIPPER_OPEN))
  
  
 # ─────────────────────────────────────────────────────
