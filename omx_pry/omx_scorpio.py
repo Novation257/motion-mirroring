@@ -7,8 +7,6 @@ from dynamixel_sdk import PortHandler, PacketHandler
 # https://www.intel.com/content/www/us/en/developer/articles/technical/accelerating-deep-learning-based-large-scale-inverse-kinematics-with-intel-distribution-of.html
 # ─────────────────────────────────────────────────────
 
-import math
-
 def two_joint_ik(x, y, l1=0.125, l2=0.125):
     # Distance to target
     r = math.sqrt(x**2 + y**2)
@@ -41,7 +39,7 @@ def two_joint_ik(x, y, l1=0.125, l2=0.125):
 
     # Convert to degrees if needed
     t1 = math.degrees(t1)
-    t2 = math.degrees(t2)
+    t2 = math.degrees(t2) - 90
 
     return t1, t2
 
@@ -157,7 +155,7 @@ def glove_to_joints(x, y, z, pitch, yaw, roll):
   All outputs clamped to each joint's physical limit.
   """
 
-  t1, t2 = two_joint_ik((y/5)+0.125, (z/5))
+  t1, t2 = two_joint_ik((y/5), (z/5)+ 0.6)
 
   j1 = clamp(yaw,           *JOINT_LIMITS_DEG[1])
   j2 = clamp(t1,   *JOINT_LIMITS_DEG[2])
