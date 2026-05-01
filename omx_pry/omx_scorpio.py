@@ -81,7 +81,7 @@ GRIPPER_OPEN   = 3300
 GRIPPER_CLOSED = 1700
 
 # Max ticks allowed to change per control cycle (~3.3 deg per step at 10 Hz = 33 deg/s)
-MAX_TICK_DELTA = 40
+MAX_TICK_DELTA = 10
  
  
 # ─────────────────────────────────────────────────────
