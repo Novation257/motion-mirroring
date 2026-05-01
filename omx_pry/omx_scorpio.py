@@ -165,7 +165,7 @@ def glove_to_joints(x, y, z, pitch, yaw, roll):
   All outputs clamped to each joint's physical limit.
   """
 
-  t1, t2 = two_joint_ik((y/2)+0.125, (z/2)+0.125)
+  t1, t2 = two_joint_ik((y/2)+0.125, (z/2))
 
   j1 = clamp(yaw,           *JOINT_LIMITS_DEG[1])
   j2 = clamp(t1,   *JOINT_LIMITS_DEG[2])
