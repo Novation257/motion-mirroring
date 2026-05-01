@@ -82,10 +82,10 @@ class Kalman1D:
     return self.velocity
 
   def zero_velocity_update(self, ax, ay, az, threshold=0.1):
-    # Zero-velocity detection using the magnitude of the acceleration
-    acc_mag = np.sqrt(ax**2 + ay**2 + az**2)
-    if acc_mag < threshold:
-        return True  # ZUPT: we assume zero velocity here
+    # # Zero-velocity detection using the magnitude of the acceleration
+    # acc_mag = np.sqrt(ax**2 + ay**2 + az**2)
+    # if acc_mag < threshold:
+    #     return True  # ZUPT: we assume zero velocity here
     return False
 
 # MotionTracker class for IMU position and rotation tracking

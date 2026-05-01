@@ -113,8 +113,8 @@ def glove_to_joints(x, y, z, pitch, yaw, roll):
   All outputs clamped to each joint's physical limit.
   """
   j1 = clamp(yaw,           *JOINT_LIMITS_DEG[1])
-  j2 = clamp(z *  10,   *JOINT_LIMITS_DEG[2])
-  j3 = clamp(y *  10,   *JOINT_LIMITS_DEG[3])
+  j2 = clamp(z *  20,   *JOINT_LIMITS_DEG[2])
+  j3 = clamp(y *  20,   *JOINT_LIMITS_DEG[3])
   j4 = clamp(-pitch * 0.75, *JOINT_LIMITS_DEG[4])
   return j1, j2, j3, j4
  
