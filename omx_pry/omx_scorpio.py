@@ -7,7 +7,6 @@ from dynamixel_sdk import PortHandler, PacketHandler
 # ─────────────────────────────────────────────────────
 
 def two_joint_ik(x, y, l1=0.125, l2=0.125):
-    y= -y
 
     # Distance to target
     dist_sq = x**2 + y**2
@@ -165,7 +164,7 @@ def glove_to_joints(x, y, z, pitch, yaw, roll):
   All outputs clamped to each joint's physical limit.
   """
 
-  t1, t2 = two_joint_ik((y/2)+0.125, (z/2))
+  t1, t2 = two_joint_ik((y/5)+0.125, (z/5))
 
   j1 = clamp(yaw,           *JOINT_LIMITS_DEG[1])
   j2 = clamp(t1,   *JOINT_LIMITS_DEG[2])
