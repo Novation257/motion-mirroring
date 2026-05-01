@@ -243,15 +243,10 @@ def process_flex(value, raw = False):
   # output raw value if raw is true
   if raw: return value
 
-  nominal = 5000 # Sensor value when unflexed
-  max = 3000 # Sensor value when flexed 90deg forward
-  deadzone = 250
+  nominal = 1600 # Sensor value when unflexed
+  flexed = 400 # Diff between nominal and max value
 
-  # Deadzone - return 0% flex when sensor is close to nominal value
-  if value >= (nominal - deadzone): return 0
-
-  # Forward flex - return percentage of flex
-  if value < (nominal - deadzone): return min((nominal-value) / (nominal-max), 1)
+  return abs(value - nominal) / flexed
 
 # ---------- NETWORK SETTINGS ----------
 # networking = False
