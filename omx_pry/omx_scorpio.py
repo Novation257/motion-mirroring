@@ -1,7 +1,38 @@
 import socket
 import math
 from dynamixel_sdk import PortHandler, PacketHandler
- 
+
+# ─────────────────────────────────────────────────────
+#  TWO-JOINT INVERSE KINEMATICS
+# ─────────────────────────────────────────────────────
+
+def two_joint_ik(x, y, l1=125, l2=125):
+    # Distance to target
+    dist_sq = x**2 + y**2
+    dist = math.sqrt(dist_sq)
+
+    # Check reachability
+    if dist > (l1 + l2) or dist < abs(l1 - l2):
+        print("Target is not reachable.")
+        return None
+
+    # Law of cosines for theta2
+    cos_theta2 = (dist_sq - l1**2 - l2**2) / (2 * l1 * l2)
+
+    # Numerical safety clamp
+    cos_theta2 = max(-1.0, min(1.0, cos_theta2))
+
+    theta2 = math.acos(cos_theta2)  # elbow-down solution
+
+    # Compute theta1
+    k1 = l1 + l2 * cos_theta2
+    k2 = l2 * math.sin(theta2)
+
+    theta1 = math.atan2(y, x) - math.atan2(k2, k1)
+
+    return theta1, theta2
+
+
 # ─────────────────────────────────────────────────────
 #  DYNAMIXEL SETTINGS
 #  OpenManipulator-X uses XM430-W350 (Protocol 2.0)
@@ -205,6 +236,8 @@ try:
 
       # Map glove orientation to joint angles
       j1, j2, j3, j4 = glove_to_joints(x, y, z, pitch, yaw, roll)
+
+      print(j1, j2, j3, j4)
 
       # Convert to Dynamixel ticks
       t1 = degrees_to_ticks(j1)
