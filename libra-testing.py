@@ -244,7 +244,7 @@ def process_flex(value, raw = False):
   if raw: return value
 
   nominal = 1600 # Sensor value when unflexed
-  flexed = 400 # Diff between nominal and max value
+  flexed = 500 # Diff between nominal and max value
 
   return abs(value - nominal) / flexed
 
@@ -289,7 +289,7 @@ while True:
   deltas = mt.update()
 
   # ----- READ FLEX SENSOR -----
-  flex_value = process_flex(flex_channel.value, raw = True)
+  flex_value = process_flex(flex_channel.value, raw = False)
 
   # ----- READ DEAD MAN'S TRIGGER -----
   button_pressed = (GPIO.input(BUTTON_PIN) == GPIO.LOW)
