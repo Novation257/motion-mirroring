@@ -294,7 +294,7 @@ while True:
   deltas = mt.update()
 
   # ----- READ FLEX SENSOR -----
-  flex_value = process_flex(flex_channel.value, raw = False)
+  flex_value = process_flex(flex_channel.value, raw = True)
 
   # ----- READ DEAD MAN'S TRIGGER -----
   button_pressed = (GPIO.input(BUTTON_PIN) == GPIO.LOW)
@@ -313,7 +313,7 @@ while True:
   # message = f"{x:.2f}\n{y:.2f}\n{z:.2f}\n\n{w:.2f}\n{r:.2f}\n{t:.2f}\n\n{flex_value}\n"
   message = f"{x:.6f},{y:.6f},{z:.6f},{w:.6f},{r:.6f},{t:.6f},{flex_value}\n"
 
-  printable = f"{x:.2f}, {y:.2f}, {z:.2f}   {w:.2f}, {r:.2f}, {t:.2f}   {flex_value}"
+  printable = f"{x:.2f}, {y:.2f}, {z:.2f}   {w:.2f}, {r:.2f}, {t:.2f}   flex={flex_value} --"
   print(f"\r{printable}", end='', flush=True)
 
   # ----- SEND DATA -----
