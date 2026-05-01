@@ -101,7 +101,7 @@ def rate_limit(target, last, max_delta=MAX_TICK_DELTA):
 #  MAP GLOVE DATA TO JOINT ANGLES
 # ─────────────────────────────────────────────────────
  
-def glove_to_joints(pitch, yaw, roll):
+def glove_to_joints(x, y, z, pitch, yaw, roll):
   """
   Maps BNO085 orientation (degrees) to joint angles (degrees).
  
@@ -113,8 +113,8 @@ def glove_to_joints(pitch, yaw, roll):
   All outputs clamped to each joint's physical limit.
   """
   j1 = clamp(yaw,           *JOINT_LIMITS_DEG[1])
-  j2 = clamp(roll *  0.5,   *JOINT_LIMITS_DEG[2])
-  j3 = clamp(-roll * 0.3,   *JOINT_LIMITS_DEG[3])
+  j2 = clamp(z *  10,   *JOINT_LIMITS_DEG[2])
+  j3 = clamp(y *  10,   *JOINT_LIMITS_DEG[3])
   j4 = clamp(-pitch * 0.75, *JOINT_LIMITS_DEG[4])
   return j1, j2, j3, j4
  
@@ -201,7 +201,7 @@ try:
         continue
 
       # Map glove orientation to joint angles
-      j1, j2, j3, j4 = glove_to_joints(pitch, yaw, roll)
+      j1, j2, j3, j4 = glove_to_joints(x, y, z, pitch, yaw, roll)
 
       # Convert to Dynamixel ticks
       t1 = degrees_to_ticks(j1)
