@@ -124,7 +124,8 @@ class MotionTracker():
   def calibrate_bias(self, samples=200):
     sx = sy = sz = 0
     for _ in range(samples):
-      ax, ay, az = self.bno.linear_acceleration
+      try: ax, ay, az = self.bno.linear_acceleration
+      except: ax = ay = az = 0
       sx += ax
       sy += ay
       sz += az
@@ -306,12 +307,9 @@ while True:
     point_rotation = np.add(point_rotation, deltas)
     flex_out = flex_value
   x, y, z, w, r, t = point_rotation
-  for angle in (w, r, t):
-    ((angle + 180) % 360) - 180
-    while angle > 180:
-      angle -= 180
-    while angle < -180:
-      angle += 180
+  w = ((w + 180) % 360) - 180
+  r = ((r + 180) % 360) - 180
+  t = ((t + 180) % 360) - 180
 
   # ----- CREATE MESSAGE -----
 
